@@ -10,10 +10,15 @@ namespace CB_Document
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Creating Simple New Document!");
             CBDocument newdoc = new CBDocument();
+            /*
+            Console.WriteLine("Creating Simple New Document!");
             newdoc.CreateNewSimpleDoc();
+            Console.WriteLine("Creating New Document from Template!");
+            newdoc.CreateCBDocumentFromCBTemplate();
             Console.WriteLine("Done!");
+            */
+            newdoc.GetPicFromGlossary();
             Console.ReadLine();
         }
     }
