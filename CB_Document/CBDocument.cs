@@ -196,6 +196,8 @@ namespace CB_Document
         public void InsertAutoText(string SignatureName)
         {
             const string NEW_DOCUMENT_NAME = "Sample AutoText Insert.docx";
+            string oldrelIDPic = "";
+            DocumentFormat.OpenXml.Drawing.Blip imgblip;
             using (WordprocessingDocument sampleDocument = WordprocessingDocument.Create(pathnewdoc + NEW_DOCUMENT_NAME, WordprocessingDocumentType.Document))
             using (WordprocessingDocument wrdTemplate = WordprocessingDocument.Open(pathtemplatedoc + TEMPLATE_NAME, false))
             {
@@ -218,9 +220,22 @@ namespace CB_Document
                                 Console.WriteLine(entry.DocPartBody.InnerXml);
                                 int paracount = entry.DocPartBody.Descendants<Paragraph>().Count();
                                 Console.WriteLine("Count of paragraphs ==> {0}", paracount);
-
                                 foreach (Paragraph entrypara in entry.DocPartBody.Descendants<Paragraph>())
                                 {
+                                    // Let's get the relationship ID if it's there
+                                    int PicCount = entrypara.Descendants<DocumentFormat.OpenXml.Drawing.Blip>().Count();
+                                    if (PicCount > 0)
+                                    {
+                                        imgblip = entrypara.Descendants<DocumentFormat.OpenXml.Drawing.Blip>().FirstOrDefault();
+                                        oldrelIDPic = imgblip.Embed.Value;
+                                        Console.WriteLine("Old Relationship ID ==> {0}", oldrelIDPic);
+                                        imgblip.Embed.Value = "rId10";
+                                        Console.WriteLine(imgblip.Embed.Value);
+
+                                        ImagePart newSigImg = mdp.AddImagePart(ImagePartType.Png, imgblip.Embed.Value);
+                                        mdp.CreateRelationshipToPart(newSigImg, imgblip.Embed.Value);
+                                        newSigImg.FeedData(gDocPart.GetPartById(oldrelIDPic).GetStream());
+                                    }
                                     mdp.Document.Body.AppendChild<Paragraph>(new Paragraph(entrypara.OuterXml));
                                 }
                             }
