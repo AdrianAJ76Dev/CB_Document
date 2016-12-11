@@ -17,8 +17,12 @@ namespace CB_Document
             Console.WriteLine("Creating New Document from Template!");
             newdoc.CreateCBDocumentFromCBTemplate();
             Console.WriteLine("Done!");
-            */
             newdoc.GetPicFromGlossary();
+            newdoc.InvestigateGlossaryDocumentPart();
+            newdoc.InvestigateTemplate();
+            newdoc.CreateDocUseOuterXml();
+            */
+            newdoc.InsertAutoText("CS_Signature");
             Console.ReadLine();
         }
     }

@@ -47,6 +47,16 @@ namespace CB_Document
             }
         }
 
+        public void CreateDocUseOuterXml()
+        {
+            const string DOCNAME_SIMPLE = "Simple Doc.docx";
+            using (WordprocessingDocument wrdNewDoc = WordprocessingDocument.Create(pathnewdoc + DOCNAME_SIMPLE, WordprocessingDocumentType.Document))
+            {
+                MainDocumentPart mdpNewDoc = wrdNewDoc.AddMainDocumentPart();
+                mdpNewDoc.Document = new Document(new Body());
+            }
+        }
+
         public void CreateCBDocumentFromCBTemplate()
         {
             // Get the template
@@ -102,6 +112,123 @@ namespace CB_Document
                         Console.WriteLine("Relationship Id ==> {0}\tUri ==> {1}", glsDocPart.GetIdOfPart(img), img.Uri);
                     }
                 }
+            }
+        }
+
+        public void InvestigateGlossaryDocumentPart()
+        {
+            using (WordprocessingDocument wrdTemplate = WordprocessingDocument.Open(pathtemplatedoc + TEMPLATE_NAME, false))
+            {
+                Console.WriteLine("Count of Glossary Document Parts ==> {0}", wrdTemplate.GetPartsCountOfType<GlossaryDocumentPart>());
+                Console.WriteLine("Count of Glossary Document Parts ==> {0}", wrdTemplate.MainDocumentPart.GetPartsCountOfType<GlossaryDocumentPart>());
+            }
+        }
+
+        public void InvestigateTemplate()
+        {
+            // I'll use this to understand code and the template package
+            using (WordprocessingDocument wrdTemplate = WordprocessingDocument.Open(pathtemplatedoc + TEMPLATE_NAME, false))
+            {
+                int PartCount = 0;
+                // Let's take a look at the Word package parts
+                PartCount = wrdTemplate.Parts.Count();
+                Console.WriteLine("Looking at the WordprocessingDocument");
+                Console.WriteLine("Count of WordprocessingDocument Parts ==> {0}", PartCount);
+                Console.WriteLine();
+                if (PartCount > 0)
+                {
+                    Console.WriteLine("Rel ID\tUri\t\t\t\tOpenXml Part Name");
+                    foreach (IdPartPair part in wrdTemplate.Parts)
+                    {
+                        Console.WriteLine("{0}\t{2}\t\t{1}", part.RelationshipId, part.OpenXmlPart.GetType().Name, part.OpenXmlPart.Uri);
+                    }
+                }
+                Console.WriteLine();
+
+                // Let's take a look at the 2nd level: The Main Document Parts
+                PartCount = wrdTemplate.MainDocumentPart.Parts.Count();
+                Console.WriteLine("Count of Main Document Parts ==> {0}", PartCount);
+                Console.WriteLine();
+                if (PartCount > 0)
+                {
+                    Console.WriteLine("Rel ID\tUri\t\t\t\tOpenXml Part Name");
+                    foreach (IdPartPair part in wrdTemplate.MainDocumentPart.Parts)
+                    {
+                        Console.WriteLine("{0}\t{2}\t\t{1}", part.RelationshipId, part.OpenXmlPart.GetType().Name, part.OpenXmlPart.Uri);
+                    }
+                }
+                Console.WriteLine();
+
+                //Now let's take a look at any Glossary Document Part (AutoText Entries) we may find
+                GlossaryDocumentPart gDocPart = wrdTemplate.MainDocumentPart.GetPartsOfType<GlossaryDocumentPart>().FirstOrDefault();
+                if (gDocPart != null)
+                {
+                    PartCount = gDocPart.Parts.Count();
+                    Console.WriteLine("Count of Glossary Parts ==> {0}", PartCount);
+                    Console.WriteLine();
+                    if (PartCount > 0)
+                    {
+                        Console.WriteLine("Rel ID\tUri\t\t\t\t\tOpenXml Part Name");
+                        foreach (IdPartPair part in gDocPart.Parts)
+                        {
+                            Console.WriteLine("{0}\t{2}\t\t{1}", part.RelationshipId, part.OpenXmlPart.GetType().Name, part.OpenXmlPart.Uri);
+                        }
+                    }
+                    Console.WriteLine();
+                    GlossaryDocument gDoc = gDocPart.GlossaryDocument;
+                    if (gDoc != null)
+                    {
+                        Console.WriteLine("AutoText Entries!");
+                        foreach (DocPart entry in gDoc.DocParts)
+                        {
+                            if (entry.DocPartProperties.Category.Gallery.Val==DocPartGalleryValues.AutoText)
+                            {
+                                Console.WriteLine("Entry Name ==> {0}", entry.DocPartProperties.DocPartName.Val);
+                            }
+                        }
+                    }
+                }
+                else
+                    Console.WriteLine("No Glossary Document Part (AutoText Entries) found.");
+            }
+        }
+
+        public void InsertAutoText(string SignatureName)
+        {
+            const string NEW_DOCUMENT_NAME = "Sample AutoText Insert.docx";
+            using (WordprocessingDocument sampleDocument = WordprocessingDocument.Create(pathnewdoc + NEW_DOCUMENT_NAME, WordprocessingDocumentType.Document))
+            using (WordprocessingDocument wrdTemplate = WordprocessingDocument.Open(pathtemplatedoc + TEMPLATE_NAME, false))
+            {
+                MainDocumentPart mdp = sampleDocument.AddMainDocumentPart();
+                mdp.Document = new Document(new Body());
+
+                GlossaryDocumentPart gDocPart = wrdTemplate.MainDocumentPart.GetPartsOfType<GlossaryDocumentPart>().FirstOrDefault();
+                if (gDocPart != null)
+                {
+                    GlossaryDocument gDoc = gDocPart.GlossaryDocument;
+                    if (gDoc != null)
+                    {
+                        Console.WriteLine("AutoText Entries!");
+                        foreach (DocPart entry in gDoc.DocParts)
+                        {
+                            if (entry.DocPartProperties.Category.Gallery.Val == DocPartGalleryValues.AutoText
+                                && entry.DocPartProperties.DocPartName.Val == SignatureName)
+                            {
+                                Console.WriteLine("Entry Name ==> {0}", entry.DocPartProperties.DocPartName.Val);
+                                Console.WriteLine(entry.DocPartBody.InnerXml);
+                                int paracount = entry.DocPartBody.Descendants<Paragraph>().Count();
+                                Console.WriteLine("Count of paragraphs ==> {0}", paracount);
+
+                                foreach (Paragraph entrypara in entry.DocPartBody.Descendants<Paragraph>())
+                                {
+                                    mdp.Document.Body.AppendChild<Paragraph>(new Paragraph(entrypara.OuterXml));
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                    Console.WriteLine("No Glossary Document Part (AutoText Entries) found.");
             }
         }
 
